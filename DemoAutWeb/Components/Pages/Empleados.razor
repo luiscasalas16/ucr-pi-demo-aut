@@ -1,0 +1,50 @@
+﻿@page "/empleados"
+@using DemoAutWeb.Models
+@using DemoAutWeb.Utils
+@attribute [StreamRendering]
+
+<PageTitle>Empleados</PageTitle>
+
+<h1>Empleados</h1>
+
+@if (_empleados == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Cédula</th>
+                <th>Nombre</th>
+                <th>Apellidos</th>
+                <th>Correo</th>
+                <th>Salario</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var forecast in _empleados)
+            {
+                <tr>
+                    <td>@forecast.Cedula</td>
+                    <td>@forecast.Nombre</td>
+                    <td>@forecast.Apellidos</td>
+                    <td>@forecast.Correo</td>
+                    <td>@forecast.Salario</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private Empleado[]? _empleados;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Delay(500);
+
+        _empleados = Faker.GenerateEmpleadosFake(5);
+    }
+}

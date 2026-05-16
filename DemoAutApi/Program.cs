@@ -41,6 +41,9 @@ static class Program
                     policy.RequireScope(scopesNames.ToArray());
                 }
             );
+
+            // Aplica la política de autorización por defecto a todos los endpoints que no definan una política explícita.
+            options.FallbackPolicy = options.GetPolicy("ApiAccess");
         });
 
         builder.Services.AddSwaggerGen(options =>
@@ -83,7 +86,8 @@ static class Program
 
         if (app.Environment.IsDevelopment())
         {
-            app.UseSwagger();
+            // Permite acceso anónimo a los endpoints internos de Swagger para evitar que la documentación quede protegida por la política de autorización por defecto.
+            app.MapSwagger().AllowAnonymous();
 
             app.UseSwaggerUI(options =>
             {

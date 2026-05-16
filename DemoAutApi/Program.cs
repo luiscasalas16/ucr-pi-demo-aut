@@ -81,10 +81,6 @@ static class Program
 
         var app = builder.Build();
 
-        // Ejecuta el middleware de autenticación y autorización.
-        app.UseAuthentication();
-        app.UseAuthorization();
-
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
@@ -109,6 +105,10 @@ static class Program
                 );
             });
         }
+
+        // Ejecuta el middleware de autenticación y autorización.
+        app.UseAuthentication();
+        app.UseAuthorization();
 
         app.MapReadEndpoints();
         app.MapWriteEndpoints();

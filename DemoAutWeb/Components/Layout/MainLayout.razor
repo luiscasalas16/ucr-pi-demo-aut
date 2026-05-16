@@ -1,4 +1,5 @@
-﻿@inherits LayoutComponentBase
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@inherits LayoutComponentBase
 
 <div class="page">
     <div class="sidebar">
@@ -7,6 +8,21 @@
 
     <main>
         <div class="top-row px-4">
+            <!-- Muestra contenido diferente dependiendo de si el usuario está autenticado o no. -->
+            <AuthorizeView>
+                <!-- Contenido visible únicamente para usuarios autenticados. -->
+                <Authorized>
+                    <!-- Muestra el nombre del usuario autenticado obtenido desde el contexto de seguridad. -->
+                    <span>User: @context.User.Identity?.Name</span>
+                    <!-- Endpoint proporcionado por Microsoft Identity para cerrar sesión. -->
+                    <a href="MicrosoftIdentity/Account/SignOut">Logout</a>
+                </Authorized>
+                <!-- Contenido visible únicamente para usuarios no autenticados. -->
+                <NotAuthorized>
+                    <!-- Endpoint proporcionado por Microsoft Identity para iniciar sesión. -->
+                    <a href="MicrosoftIdentity/Account/SignIn">Login</a>
+                </NotAuthorized>
+            </AuthorizeView>
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
         </div>
 

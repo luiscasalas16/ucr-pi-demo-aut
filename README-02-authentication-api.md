@@ -17,10 +17,10 @@ En esta versión se habilitó que el API:
 
 ## Infraestructura
 
-La documentación visual de creación de infraestructura en Microsoft Entra External ID se encuentra en:
+La documentación visual de configuración en Microsoft Entra External ID se encuentra en:
 
 ```text
-README-Infrastructure.md
+README-02-authentication-api-infrastructure.docx
 ```
 
 ## Componentes principales

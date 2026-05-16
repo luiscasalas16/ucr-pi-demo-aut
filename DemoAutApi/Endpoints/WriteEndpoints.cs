@@ -6,7 +6,7 @@ internal static class WriteEndpoints
     {
         var group = builder.MapGroup("/write").WithTags("Write Examples");
 
-        group.MapGet("/InsertEmpleado", InsertEmpleado);
+        group.MapPost("/InsertEmpleado", InsertEmpleado);
 
         return builder;
     }

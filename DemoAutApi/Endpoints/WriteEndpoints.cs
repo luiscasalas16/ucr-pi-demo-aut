@@ -7,7 +7,9 @@ internal static class WriteEndpoints
         var group = builder
             .MapGroup("/write")
             .WithTags("Write Examples")
-            // Protege este grupo de endpoints usando la política ApiAccess.
+            // Aplica explícitamente la política ApiAccess a este grupo de endpoints.
+            // No es requerido si ya existe una política de autorización por defecto (FallbackPolicy),
+            // pero puede usarse para hacer la intención más explícita en el código.
             .RequireAuthorization("ApiAccess");
 
         group.MapPost("/InsertEmpleado", InsertEmpleado);

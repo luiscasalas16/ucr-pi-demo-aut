@@ -4,7 +4,11 @@ internal static class ReadEndpoints
 {
     public static IEndpointRouteBuilder MapReadEndpoints(this IEndpointRouteBuilder builder)
     {
-        var group = builder.MapGroup("/read").WithTags("Read Examples");
+        var group = builder
+            .MapGroup("/read")
+            .WithTags("Read Examples")
+            // Protege este grupo de endpoints usando la política ApiAccess.
+            .RequireAuthorization("ApiAccess");
 
         group.MapGet("/GetEmpleados", GetEmpleados);
 

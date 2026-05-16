@@ -4,7 +4,11 @@ internal static class WriteEndpoints
 {
     public static IEndpointRouteBuilder MapWriteEndpoints(this IEndpointRouteBuilder builder)
     {
-        var group = builder.MapGroup("/write").WithTags("Write Examples");
+        var group = builder
+            .MapGroup("/write")
+            .WithTags("Write Examples")
+            // Protege este grupo de endpoints usando la política ApiAccess.
+            .RequireAuthorization("ApiAccess");
 
         group.MapPost("/InsertEmpleado", InsertEmpleado);
 

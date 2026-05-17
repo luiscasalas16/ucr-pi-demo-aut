@@ -1,9 +1,7 @@
 ﻿@page "/empleados"
-@using DemoAutWeb.Models
-@using DemoAutWeb.Utils
 @attribute [StreamRendering]
 @* Exige que el usuario esté autenticado para poder acceder al componente o página Razor. *@
-@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@attribute [Authorize]
 
 <PageTitle>Empleados</PageTitle>
 

@@ -1,4 +1,6 @@
-using DemoAutWeb.Components;
+global using DemoAutWeb.Components;
+global using DemoAutWeb.Models;
+global using DemoAutWeb.Utils;
 
 namespace DemoAutWeb;
 

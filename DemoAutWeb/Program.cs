@@ -1,7 +1,10 @@
-using DemoAutWeb.Components;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.Identity.Web;
-using Microsoft.Identity.Web.UI;
+global using DemoAutWeb.Components;
+global using DemoAutWeb.Models;
+global using DemoAutWeb.Utils;
+global using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+global using Microsoft.AspNetCore.Authorization;
+global using Microsoft.Identity.Web;
+global using Microsoft.Identity.Web.UI;
 
 namespace DemoAutWeb;
 
@@ -11,38 +14,57 @@ static class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Configura autenticaci髇 OpenID Connect utilizando Microsoft Entra External ID.
+        // Registra los servicios necesarios para manejar autom谩ticamente desaf铆os de autenticaci贸n,
+        // consentimiento incremental y pol铆ticas de acceso condicional solicitadas por Microsoft Entra.
+        builder.Services.AddMicrosoftIdentityConsentHandler();
+
+        var apiScopes = builder.Configuration.GetSection("DownstreamApi:Scopes").Get<string[]>()!;
+
+        // Configura autenticaci贸n OpenID Connect utilizando Microsoft Entra External ID.
         builder
             .Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
             .AddMicrosoftIdentityWebApp(options =>
             {
-                // Carga la configuraci髇 de autenticaci髇 desde la secci髇 AzureAd del appsettings.json.
+                // Carga la configuraci贸n de autenticaci贸n desde la secci贸n AzureAd del appsettings.json.
                 builder.Configuration.Bind("AzureAd", options);
 
-                // Permite modificar los par醡etros enviados a Microsoft Entra antes de redirigir al usuario al proceso de autenticaci髇.
+                // Permite modificar los par谩metros enviados a Microsoft Entra antes de redirigir al usuario al proceso de autenticaci贸n.
                 options.Events.OnRedirectToIdentityProvider = context =>
                 {
-                    // Fuerza que Microsoft Entra muestre nuevamente la pantalla de autenticaci髇 y solicite credenciales al usuario,
-                    // incluso si ya existe una sesi髇 iniciada en el navegador.
+                    // Fuerza que Microsoft Entra muestre nuevamente la pantalla de autenticaci贸n y solicite credenciales al usuario,
+                    // incluso si ya existe una sesi贸n iniciada en el navegador.
                     //context.ProtocolMessage.Prompt = "login";
 
-                    // Fuerza que Microsoft Entra muestre la pantalla de selecci髇 de cuenta cuando hay varias sesiones o cuentas disponibles.
+                    // Fuerza que Microsoft Entra muestre la pantalla de selecci贸n de cuenta cuando hay varias sesiones o cuentas disponibles.
                     context.ProtocolMessage.Prompt = "select_account";
 
                     return Task.CompletedTask;
                 };
-            });
+            })
+            // Habilita la adquisici贸n de access tokens para consumir APIs protegidos en nombre del usuario autenticado.
+            .EnableTokenAcquisitionToCallDownstreamApi(apiScopes)
+            // Configura un cache de tokens en memoria para reutilizar tokens adquiridos previamente durante la sesi贸n de la aplicaci贸n.
+            .AddInMemoryTokenCaches();
 
-        // Habilita el uso de autorizaci髇 dentro de la aplicaci髇 web.
+        // Habilita el uso de autorizaci贸n dentro de la aplicaci贸n web.
         builder.Services.AddAuthorization();
 
-        // Registra los controladores necesarios para los endpoints internos de autenticaci髇 proporcionados por Microsoft Identity.
+        // Registra los controladores necesarios para los endpoints internos de autenticaci贸n proporcionados por Microsoft Identity.
         builder.Services.AddControllersWithViews().AddMicrosoftIdentityUI();
 
         builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
-        // Habilita el estado de autenticaci髇 en cascada para que los componentes Razor puedan acceder a la informaci髇 del usuario autenticado.
+        // Habilita el estado de autenticaci贸n en cascada para que los componentes Razor puedan acceder a la informaci贸n del usuario autenticado.
         builder.Services.AddCascadingAuthenticationState();
+
+        // Registra un HttpClient configurado para consumir el API protegido DemoAutApi.
+        builder.Services.AddHttpClient(
+            "DemoAutApi",
+            client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["DownstreamApi:BaseUrl"]!);
+            }
+        );
 
         var app = builder.Build();
 
@@ -56,7 +78,7 @@ static class Program
         app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
         app.UseHttpsRedirection();
 
-        // Ejecuta el middleware de autenticaci髇 y autorizaci髇.
+        // Ejecuta el middleware de autenticaci贸n y autorizaci贸n.
         app.UseAuthentication();
         app.UseAuthorization();
 
@@ -64,7 +86,7 @@ static class Program
 
         app.MapStaticAssets();
 
-        // Registra los controladores utilizados internamente por Microsoft Identity para manejar login, logout y callbacks de autenticaci髇.
+        // Registra los controladores utilizados internamente por Microsoft Identity para manejar login, logout y callbacks de autenticaci贸n.
         app.MapControllers();
 
         app.MapRazorComponents<App>().AddInteractiveServerRenderMode();

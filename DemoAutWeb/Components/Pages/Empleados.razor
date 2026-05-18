@@ -1,9 +1,24 @@
 ﻿@page "/empleados"
-@using DemoAutWeb.Models
-@using DemoAutWeb.Utils
 @attribute [StreamRendering]
 @* Exige que el usuario esté autenticado para poder acceder al componente o página Razor. *@
-@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@attribute [Authorize]
+
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.Identity.Web
+@using System.Net.Http.Headers
+@using System.Net.Http.Json
+
+@* Permite obtener el estado de autenticación actual del usuario dentro de componentes Razor. *@
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@* Servicio utilizado para adquirir access tokens desde Microsoft Entra en nombre del usuario autenticado. *@
+@inject ITokenAcquisition TokenAcquisition
+@* Factory utilizada para crear instancias configuradas de HttpClient. *@
+@inject IHttpClientFactory HttpClientFactory
+@* Permite acceder a la configuración de la aplicación desde el componente. *@
+@inject IConfiguration Configuration
+@* Servicio utilizado para manejar automáticamente desafíos de autenticación,
+   consentimiento incremental y recuperación de tokens cuando Microsoft Entra lo requiere. *@
+@inject MicrosoftIdentityConsentAndConditionalAccessHandler ConsentHandler
 
 <PageTitle>Empleados</PageTitle>
 
@@ -45,8 +60,44 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await Task.Delay(500);
+        try
+        {
+            // Obtiene el estado de autenticación actual del usuario.
+            var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        
+            // Obtiene el ClaimsPrincipal asociado al usuario autenticado.
+            var user = authenticationState.User;
 
-        _empleados = Faker.GenerateEmpleadosFake(5);
+            // Verifica que el usuario esté autenticado antes de intentar solicitar un access token.
+            if (user.Identity?.IsAuthenticated != true)
+                return;
+
+            // Obtiene los scopes configurados para consumir el API protegido.
+            var scopes = Configuration
+                .GetSection("DownstreamApi:Scopes")
+                .Get<string[]>()!;
+                
+            // Solicita un access token a Microsoft Entra para consumir el API en nombre del usuario autenticado.
+            var accessToken = await TokenAcquisition.GetAccessTokenForUserAsync(
+                  scopes,
+                  user: user
+              );
+
+            // Obtiene una instancia configurada de HttpClient para consumir DemoAutApi.
+            var httpClient = HttpClientFactory.CreateClient("DemoAutApi");
+
+            // Envía el access token como Bearer Token en el encabezado Authorization de las solicitudes HTTP.
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", accessToken);
+
+            // Consume el endpoint protegido del API utilizando el access token obtenido previamente.
+            _empleados = (await httpClient.GetFromJsonAsync<List<Empleado>>("read/GetEmpleados"))?.ToArray();
+        }
+        catch (MicrosoftIdentityWebChallengeUserException ex)
+        {
+            // Maneja automáticamente la excepción lanzada por Microsoft Entra,
+            // redirigiendo al usuario para recuperar o volver a solicitar el access token requerido.
+            ConsentHandler.HandleException(ex);
+        }
     }
 }

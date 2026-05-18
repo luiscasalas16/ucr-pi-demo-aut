@@ -14,6 +14,12 @@ static class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        // Registra los servicios necesarios para manejar automáticamente desafíos de autenticación,
+        // consentimiento incremental y políticas de acceso condicional solicitadas por Microsoft Entra.
+        builder.Services.AddMicrosoftIdentityConsentHandler();
+
+        var apiScopes = builder.Configuration.GetSection("DownstreamApi:Scopes").Get<string[]>()!;
+
         // Configura autenticación OpenID Connect utilizando Microsoft Entra External ID.
         builder
             .Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
@@ -34,7 +40,11 @@ static class Program
 
                     return Task.CompletedTask;
                 };
-            });
+            })
+            // Habilita la adquisición de access tokens para consumir APIs protegidos en nombre del usuario autenticado.
+            .EnableTokenAcquisitionToCallDownstreamApi(apiScopes)
+            // Configura un cache de tokens en memoria para reutilizar tokens adquiridos previamente durante la sesión de la aplicación.
+            .AddInMemoryTokenCaches();
 
         // Habilita el uso de autorización dentro de la aplicación web.
         builder.Services.AddAuthorization();
@@ -46,6 +56,15 @@ static class Program
 
         // Habilita el estado de autenticación en cascada para que los componentes Razor puedan acceder a la información del usuario autenticado.
         builder.Services.AddCascadingAuthenticationState();
+
+        // Registra un HttpClient configurado para consumir el API protegido DemoAutApi.
+        builder.Services.AddHttpClient(
+            "DemoAutApi",
+            client =>
+            {
+                client.BaseAddress = new Uri(builder.Configuration["DownstreamApi:BaseUrl"]!);
+            }
+        );
 
         var app = builder.Build();
 

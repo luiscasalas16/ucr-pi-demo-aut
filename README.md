@@ -10,3 +10,4 @@ La intenci처n del proyecto es mostrar la evoluci처n paso a paso de una aplicaci�
 - `02-authentication-api`: Agrega autenticaci처n y autorizaci처n al API utilizando Microsoft Entra External ID.
 - `03-basic-web`: Versi처n inicial de una aplicaci처n Blazor Web App sin autenticaci처n.
 - `04-authentication-web`: Agrega autenticaci처n web utilizando Microsoft Entra External ID.
+- `05-authentication-web-api`: Integra la web autenticada y el api autenticado utilizando Microsoft Entra External ID.

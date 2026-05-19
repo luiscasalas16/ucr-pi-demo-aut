@@ -42,7 +42,10 @@ static class Program
                 }
             );
 
-            // Aplica la política de autorización por defecto a todos los endpoints que no definan una política explícita.
+            // Se aplica cuando un endpoint usa RequireAuthorization() sin política explícita.
+            options.DefaultPolicy = options.GetPolicy("ApiAccess")!;
+
+            // Se aplica cuando un endpoint no declara ningún requisito de autorización.
             options.FallbackPolicy = options.GetPolicy("ApiAccess");
         });
 
@@ -116,6 +119,7 @@ static class Program
 
         app.MapReadEndpoints();
         app.MapWriteEndpoints();
+        app.MapTestEndpoints();
 
         app.Run();
     }

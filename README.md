@@ -11,3 +11,4 @@ La intención del proyecto es mostrar la evolución paso a paso de una aplicaci�
 - `03-basic-web`: Versión inicial de una aplicación Blazor Web App sin autenticación.
 - `04-authentication-web`: Agrega autenticación web utilizando Microsoft Entra External ID.
 - `05-authentication-web-api`: Integra la web autenticada y el api autenticado utilizando Microsoft Entra External ID.
+- `06-authorizacion-api`: Agrega autorización funcional por permisos al API, permitiendo proteger endpoints según las operaciones que puede ejecutar cada usuario.

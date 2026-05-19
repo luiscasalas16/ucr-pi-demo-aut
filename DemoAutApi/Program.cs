@@ -1,8 +1,10 @@
+global using DemoAutApi.Authorization;
 global using DemoAutApi.Database;
 global using DemoAutApi.Endpoints;
 global using DemoAutApi.Models;
 global using DemoAutApi.Utils;
 global using Microsoft.AspNetCore.Authentication.JwtBearer;
+global using Microsoft.AspNetCore.Authorization;
 global using Microsoft.AspNetCore.Mvc;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.Identity.Web;
@@ -42,11 +44,53 @@ static class Program
                 }
             );
 
+            //****************************************************************************************************//
+            // Alternativa 1: aplica la política ApiAccess como comportamiento por defecto.
+            //
+            // Con esta configuración:
+            // - Un endpoint que use RequireAuthorization() sin indicar una política explícita
+            //   requerirá autenticación y el scope general de acceso al API.
+            // - Un endpoint que no declare ningún requisito de autorización
+            //   también requerirá autenticación y el scope general de acceso al API.
+            //
+            // Esta alternativa permite que los endpoints queden protegidos por defecto con acceso general al API,
+            // pero no obliga a definir un permiso específico para cada operación.
+
             // Se aplica cuando un endpoint usa RequireAuthorization() sin política explícita.
-            options.DefaultPolicy = options.GetPolicy("ApiAccess")!;
+            //options.DefaultPolicy = options.GetPolicy("ApiAccess")!;
 
             // Se aplica cuando un endpoint no declara ningún requisito de autorización.
-            options.FallbackPolicy = options.GetPolicy("ApiAccess");
+            //options.FallbackPolicy = options.GetPolicy("ApiAccess");
+            //****************************************************************************************************//
+
+            //****************************************************************************************************//
+            // Alternativa 2: exige que el desarrollador tome una decisión explícita de autorización.
+            //
+            // Esta política siempre falla, por lo que:
+            // - Un endpoint que use RequireAuthorization() sin indicar una política explícita será bloqueado.
+            // - Un endpoint que no declare ningún requisito de autorización también será bloqueado.
+            //
+            // Con esta configuración, cada endpoint debe declarar explícitamente una de estas opciones:
+            // - RequirePermission(...) para exigir un permiso funcional específico.
+            // - RequireAuthorization("ApiAccess") si solo debe requerir acceso general al API.
+            // - AllowAnonymous() si debe ser público.
+            //
+            // Esta alternativa es más estricta y ayuda a evitar que un endpoint quede accesible
+            // por omisión sin que se haya definido intencionalmente su estrategia de autorización.
+            options.AddPolicy(
+                "PermissionRequired",
+                policy =>
+                {
+                    policy.RequireAssertion(_ => false);
+                }
+            );
+
+            // Se aplica cuando un endpoint usa RequireAuthorization() sin política explícita.
+            options.DefaultPolicy = options.GetPolicy("PermissionRequired")!;
+
+            // Se aplica cuando un endpoint no declara ningún requisito de autorización.
+            options.FallbackPolicy = options.GetPolicy("PermissionRequired")!;
+            //****************************************************************************************************//
         });
 
         builder.Services.AddSwaggerGen(options =>
@@ -84,6 +128,24 @@ static class Program
         });
 
         builder.Services.AddDbContext<EmpresaContext>();
+
+        // Registra el servicio encargado de verificar si un usuario posee un permiso específico.
+        // Se utiliza con alcance Scoped porque participa en la autorización de cada solicitud
+        // y puede depender del contexto de base de datos.
+        builder.Services.AddScoped<IPermissionService, PermissionService>();
+
+        // Registra el handler de autorización que evalúa los requisitos basados en permisos.
+        // Este handler consulta IPermissionService para determinar si el usuario autenticado
+        // puede ejecutar la operación solicitada.
+        builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+
+        // Registra el proveedor dinámico de políticas de autorización.
+        // Permite resolver políticas con el formato "Permission:<permiso>"
+        // sin tener que registrar manualmente una política por cada permiso existente.
+        builder.Services.AddSingleton<
+            IAuthorizationPolicyProvider,
+            PermissionAuthorizationPolicyProvider
+        >();
 
         var app = builder.Build();
 
